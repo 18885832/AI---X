@@ -593,3 +593,4 @@ python main.py
 *최신 버전: Python 경량 시스템 | RAG 기능 포함 | 오타 수정 기능 포함 | 웹 UI 포함*
 
 GitHub 연결완료 (261111)
+GitHub  테스트 (비쥬얼코드)
