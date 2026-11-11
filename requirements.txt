@@ -1,0 +1,10 @@
+openai-whisper>=20231117
+python-pptx>=0.6.23
+requests>=2.31.0
+
+# RAG (Retrieval-Augmented Generation)
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0

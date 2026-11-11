@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+
+Reports/
+web_uploads/
+ffmpeg/
+.rag_cache/
+
+Reference/
+
+음성/
+
+*.pptx
+*.m4a
+*.xlsx
+
+.env

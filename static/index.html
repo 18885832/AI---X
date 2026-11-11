@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 회의록 생성 시스템</title>
+    <link rel="stylesheet" href="/static/style.css?v=5">
+</head>
+<body>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI 회의록 생성 시스템</h1>
+            <p>음성 파일을 업로드하면 자동으로 회의록 PPT 를 생성합니다.</p>
+        </header>
+
+        <!-- 단계 1: 파일 업로드 -->
+        <div class="section">
+            <h2>1. 음성 파일 업로드</h2>
+            <div class="upload-area">
+                <input type="file" id="audioFile" accept=".m4a,.wav,.mp3,.flac">
+                <label for="audioFile" class="file-select-btn">파일 선택</label>
+                <div id="fileName" class="file-name"></div>
+            </div>
+            <button id="uploadBtn" onclick="uploadFile()" disabled>업로드</button>
+            <div id="uploadStatus" class="status"></div>
+        </div>
+
+        <!-- 단계 2: 참고폴더 (RAG) -->
+        <div class="section">
+            <h2>2. 참고폴더 (RAG)</h2>
+            <p class="section-hint">참고폴더에 문서를 업로드하면 AI 가 분석 시 해당 내용을 참고합니다. 파일 업로드 후 "검색 준비 다시하기"를 누르면 검색이 가능해집니다.</p>
+
+            <div class="rag-upload-area">
+                <input type="file" id="referenceFile" accept=".txt,.md,.pdf,.docx,.pptx,.xlsx,.json,.csv" multiple>
+                <label for="referenceFile" class="rag-upload-btn">파일 업로드</label>
+                <span class="rag-hint">텍스트, PDF, Word, PowerPoint, Excel 파일 지원</span>
+            </div>
+
+            <div id="ragStatus" class="status"></div>
+
+            <div class="reference-files">
+                <div class="reference-header">
+                    <h3>등록된 참고파일 (<span id="referenceCount">0</span>)</h3>
+                    <button id="refreshRagBtn" onclick="refreshRagIndex()" class="small">검색 준비 다시하기</button>
+                </div>
+                <div id="referenceFileList" class="file-list">
+                    <p class="empty-message">등록된 참고파일이 없습니다.</p>
+                </div>
+            </div>
+
+            <div class="rag-search">
+                <input type="text" id="ragSearchInput" placeholder="참고파일 검색...">
+                <button onclick="searchReference()" class="small">검색</button>
+                <div id="ragSearchResults" class="search-results"></div>
+            </div>
+        </div>
+
+        <!-- 단계 3: AI 분석 -->
+        <div class="section">
+            <h2>3. AI 분석</h2>
+            <div class="model-selector">
+                <label>AI 모델 선택:</label>
+                <div class="model-cards">
+                    <label class="model-card" data-model="Qwen3.5-122B-A10B-FP16">
+                        <input type="radio" name="aiModel" value="Qwen3.5-122B-A10B-FP16" checked>
+                        <div class="card-content">
+                            <div class="card-header">
+                                <span class="model-name">Qwen3.5-122B</span>
+                                <span class="model-badge primary">메인서버</span>
+                            </div>
+                            <p class="model-desc">대형 텍스트 LLM - 가장 정교한 분석</p>
+                        </div>
+                    </label>
+                    <label class="model-card" data-model="Qwen3.5-27B-FP8">
+                        <input type="radio" name="aiModel" value="Qwen3.5-27B-FP8">
+                        <div class="card-content">
+                            <div class="card-header">
+                                <span class="model-name">Qwen3.5-27B</span>
+                                <span class="model-badge">텍스트</span>
+                            </div>
+                            <p class="model-desc">텍스트 LLM 채팅 - 빠른 처리</p>
+                        </div>
+                    </label>
+                    <label class="model-card" data-model="Qwen3-VL-32B-Instruct-FP8">
+                        <input type="radio" name="aiModel" value="Qwen3-VL-32B-Instruct-FP8">
+                        <div class="card-content">
+                            <div class="card-header">
+                                <span class="model-name">Qwen3-VL-32B</span>
+                                <span class="model-badge warning">비전 지원</span>
+                            </div>
+                            <p class="model-desc">이미지 포함 LLM 채팅 - 멀티모달</p>
+                        </div>
+                    </label>
+                    <label class="model-card" data-model="Qwen3.6-35B-A3B-FP8">
+                        <input type="radio" name="aiModel" value="Qwen3.6-35B-A3B-FP8">
+                        <div class="card-content">
+                            <div class="card-header">
+                                <span class="model-name">Qwen3.6-35B</span>
+                                <span class="model-badge info">서브인프라</span>
+                            </div>
+                            <p class="model-desc">텍스트 LLM 채팅 - 균형 잡힌 성능</p>
+                        </div>
+                    </label>
+                </div>
+                <input type="hidden" id="modelSelect" value="Qwen3.5-122B-A10B-FP16">
+            </div>
+            <button id="analyzeBtn" onclick="analyzeAudio()" disabled>분석 실행</button>
+            <button id="editBtn" onclick="toggleEdit()" style="display:none;" class="secondary">수정</button>
+            <button id="saveBtn" onclick="saveEdit()" style="display:none;" class="success">저장</button>
+            <div id="analyzeStatus" class="status"></div>
+            <div id="analysisResult" class="result"></div>
+        </div>
+
+        <!-- 단계 4: PPT 생성 -->
+        <div class="section">
+            <h2>4. PPT 생성</h2>
+            <button id="generateBtn" onclick="generatePPT()" disabled>생성</button>
+            <button id="downloadBtn" onclick="downloadPPT()" disabled>다운로드</button>
+            <div id="generateStatus" class="status"></div>
+        </div>
+
+        <!-- 단계 5: 오타 수정 관리 -->
+        <div class="section">
+            <h2>5. 오타 수정 관리</h2>
+            <p class="section-hint">자주 틀리는 단어를 등록하면 STT 변환 시 자동으로 수정됩니다.</p>
+
+            <div class="correction-add">
+                <input type="text" id="wrongWordInput" placeholder="틀리는 단어">
+                <span style="margin: 0 10px;">→</span>
+                <input type="text" id="correctWordInput" placeholder="올바른 단어">
+                <button onclick="addCorrection()" class="small">등록</button>
+            </div>
+
+            <div id="correctionStatus" class="status"></div>
+
+            <div class="correction-list">
+                <div class="reference-header">
+                    <h3>등록된 오타 수정 (<span id="correctionCount">0</span>)</h3>
+                    <button onclick="loadCorrections()" class="small">새로고침</button>
+                </div>
+                <div id="correctionList" class="file-list">
+                    <p class="empty-message">등록된 오타 수정이 없습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=12"></script>
+</body>
+</html>
